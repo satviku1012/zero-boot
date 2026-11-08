@@ -1,5 +1,4 @@
 # ZeroBoot developer tasks. Requires: go, protoc, protoc-gen-go, protoc-gen-go-grpc.
-BINARIES := sandbox node-agent controller gateway
 
 .PHONY: all proto build build-linux test test-integration vet tidy up down bench clean
 
@@ -13,12 +12,11 @@ proto:
 
 ## build: compile all four binaries for the host OS (Linux isolation is stubbed on darwin)
 build:
-	@for b in $(BINARIES); do go build -o bin/$$b ./cmd/$$b || exit 1; done
+	go build -o bin/ ./cmd/...
 
 ## build-linux: cross-compile for the Docker worker image
 build-linux:
-	@for b in $(BINARIES); do GOOS=linux GOARCH=$${GOARCH:-amd64} CGO_ENABLED=0 \
-		go build -o bin/linux/$$b ./cmd/$$b || exit 1; done
+	GOOS=linux GOARCH=$${GOARCH:-amd64} CGO_ENABLED=0 go build -o bin/linux/ ./cmd/...
 
 ## test: unit tests (host-safe)
 test:
