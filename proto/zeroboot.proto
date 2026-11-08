@@ -1,0 +1,98 @@
+// zeroboot.proto is the single gRPC contract for the whole cluster.
+//
+// Two services live here:
+//   - NodeAgentService: served by each worker node (:50052). The controller
+//     calls it to spawn, wake, and kill sandbox processes on that node.
+//   - ControllerService: served by the central controller (:50051). The
+//     gateway calls it to claim a sandbox for a request and release it after.
+//
+// Call flow for one request:
+//   gateway --ClaimSandbox--> controller --ActivateSandbox--> node-agent
+//   gateway --(raw TCP payload)--> sandbox on node-agent
+//   gateway --ReleaseSandbox--> controller --DestroySandbox--> node-agent
+syntax = "proto3";
+
+package zeroboot;
+
+// Generated Go code lives next to this file, in package zerobootpb.
+option go_package = "github.com/satviku1012/distributed-sandbox-pool/proto;zerobootpb";
+
+// ---------------------------------------------------------------------------
+// NodeAgentService: per-worker sandbox lifecycle
+// ---------------------------------------------------------------------------
+
+service NodeAgentService {
+  // Spawns a sandbox in new PID/UTS namespaces, waits for it to print READY
+  // (~2s cold init), then freezes it via cgroup.freeze so it idles at 0% CPU.
+  rpc CreateWarmSandbox(CreateWarmSandboxRequest) returns (CreateWarmSandboxResponse);
+
+  // Unfreezes a warm sandbox (cgroup.freeze = 0) so it can accept TCP work.
+  rpc ActivateSandbox(ActivateSandboxRequest) returns (ActivateSandboxResponse);
+
+  // Kills the sandbox process and removes its cgroup directory.
+  rpc DestroySandbox(DestroySandboxRequest) returns (DestroySandboxResponse);
+}
+
+// No inputs: the agent picks a free port (9001-9099) and a sandbox ID itself.
+message CreateWarmSandboxRequest {}
+
+message CreateWarmSandboxResponse {
+  // Unique ID for this sandbox; also names its cgroup (zeroboot_<id>).
+  string sandbox_id = 1;
+
+  // TCP port the sandbox listens on. The agent returns only the port; the
+  // controller pairs it with the node's host from WORKER_NODES.
+  int32 port = 2;
+}
+
+message ActivateSandboxRequest {
+  string sandbox_id = 1;
+}
+
+message ActivateSandboxResponse {}
+
+message DestroySandboxRequest {
+  string sandbox_id = 1;
+}
+
+message DestroySandboxResponse {}
+
+// ---------------------------------------------------------------------------
+// ControllerService: cluster-wide warm pool
+// ---------------------------------------------------------------------------
+
+service ControllerService {
+  // Hands out a sandbox: from the warm pool if one is ready (WARM_HIT, <5ms),
+  // otherwise by spawning one on demand (COLD_MISS, ~2s).
+  rpc ClaimSandbox(ClaimSandboxRequest) returns (ClaimSandboxResponse);
+
+  // Returns a claimed sandbox; the controller destroys it on its worker node.
+  rpc ReleaseSandbox(ReleaseSandboxRequest) returns (ReleaseSandboxResponse);
+}
+
+// How a claim was satisfied. Zero is reserved as "unset", per proto3 practice.
+enum ClaimStatus {
+  CLAIM_STATUS_UNSPECIFIED = 0;
+  WARM_HIT = 1;   // served from the pre-warmed pool
+  COLD_MISS = 2;  // pool was empty, sandbox spawned synchronously
+}
+
+message ClaimSandboxRequest {}
+
+message ClaimSandboxResponse {
+  string sandbox_id = 1;
+
+  // Worker host that owns the sandbox, e.g. "node-1".
+  string node = 2;
+
+  // Where the gateway dials the sandbox directly, e.g. "node-1:9003".
+  string tcp_address = 3;
+
+  ClaimStatus status = 4;
+}
+
+message ReleaseSandboxRequest {
+  string sandbox_id = 1;
+}
+
+message ReleaseSandboxResponse {}
