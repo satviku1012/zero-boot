@@ -1,0 +1,22 @@
+# Build output
+/bin/
+*.exe
+*.test
+*.out
+
+# Coverage
+coverage.*
+*.coverprofile
+
+# Local environment overrides (keep the committed example)
+.env
+configs/*.local.env
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Claude Code per-user settings
+.claude/settings.local.json

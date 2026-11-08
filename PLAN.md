@@ -25,7 +25,7 @@ This plan turns the requirements in `PROJECT.md` into sequential phases. Complet
 **Scope**
 
 - Implement `cmd/sandbox`: simulate a two-second startup, listen on its assigned TCP port, and process/echo payloads.
-- Implement worker process lifecycle and Linux isolation in `cmd/node-agent/linux_isolation.go`: PID/UTS namespaces, a 64 MiB cgroup memory limit, freeze/unfreeze, and destruction.
+- Implement worker process lifecycle and Linux isolation in `cmd/node-agent/linux_isolation.go`: PID/UTS namespaces, waiting for the sandbox's `READY` line, a per-sandbox cgroup with freeze/unfreeze, and destruction. No memory limit is set (see `PROJECT.md` §2).
 - Provide a non-Linux build stub or equivalent build-tagged separation so development builds remain portable.
 - Expose create, activate, and destroy through the node-agent gRPC server on port `50052`.
 
@@ -33,7 +33,8 @@ This plan turns the requirements in `PROJECT.md` into sequential phases. Complet
 
 - Build the sandbox and node-agent packages on the development host.
 - On a Linux host/container with the needed privileges, create a sandbox and confirm it reports ready only after initialization, accepts a TCP payload, and returns the expected response.
-- Confirm the cgroup has `memory.max=67108864` and `cgroup.freeze` transitions to `1` while idle and `0` on activation; verify the documented `SIGSTOP`/`SIGCONT` fallback when cgroup writes are unavailable.
+- Confirm the agent returns only after `READY` is printed, and that a sandbox that never prints `READY` is killed after the timeout.
+- Confirm the sandbox PID is listed in `zeroboot_<id>/cgroup.procs` and `cgroup.freeze` transitions to `1` while idle and `0` on activation; verify the documented `SIGSTOP`/`SIGCONT` fallback when cgroup writes are unavailable.
 - Confirm destroy terminates the process and removes its cgroup directory where applicable.
 
 **Definition of Done**
@@ -47,7 +48,7 @@ This plan turns the requirements in `PROJECT.md` into sequential phases. Complet
 - Parse `WORKER_NODES` and establish gRPC clients to the configured agents.
 - Maintain a capacity-five `chan SandboxLease` and seed the pool across workers at startup.
 - Implement `ClaimSandbox` with a non-blocking channel receive: activate and return a warm lease when available; otherwise synchronously create and activate a cold lease.
-- Return the lease ID, worker identity/address, TCP endpoint, and `WARM_HIT`/`COLD_MISS` status.
+- Return the lease ID, worker identity, TCP endpoint, and `WARM_HIT`/`COLD_MISS` status. Build the TCP endpoint from the host in the lease's `WORKER_NODES` entry plus the port the agent returned.
 
 **Verification**
 

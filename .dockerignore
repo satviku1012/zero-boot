@@ -1,0 +1,7 @@
+.git
+.claude
+bin
+docs
+test
+*.md
+!README.md
