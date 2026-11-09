@@ -23,7 +23,7 @@ option go_package = "github.com/satviku1012/distributed-sandbox-pool/proto;zerob
 
 service NodeAgentService {
   // Spawns a sandbox in new PID/UTS namespaces, waits for it to print READY
-  // (~2s cold init), then freezes it via cgroup.freeze so it idles at 0% CPU.
+  // (~450ms cold init), then freezes it via cgroup.freeze so it idles at 0% CPU.
   rpc CreateWarmSandbox(CreateWarmSandboxRequest) returns (CreateWarmSandboxResponse);
 
   // Unfreezes a warm sandbox (cgroup.freeze = 0) so it can accept TCP work.
@@ -63,7 +63,7 @@ message DestroySandboxResponse {}
 
 service ControllerService {
   // Hands out a sandbox: from the warm pool if one is ready (WARM_HIT, <5ms),
-  // otherwise by spawning one on demand (COLD_MISS, ~2s).
+  // otherwise by spawning one on demand (COLD_MISS, ~450ms).
   rpc ClaimSandbox(ClaimSandboxRequest) returns (ClaimSandboxResponse);
 
   // Returns a claimed sandbox; the controller destroys it on its worker node.

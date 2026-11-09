@@ -42,7 +42,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type NodeAgentServiceClient interface {
 	// Spawns a sandbox in new PID/UTS namespaces, waits for it to print READY
-	// (~2s cold init), then freezes it via cgroup.freeze so it idles at 0% CPU.
+	// (~450ms cold init), then freezes it via cgroup.freeze so it idles at 0% CPU.
 	CreateWarmSandbox(ctx context.Context, in *CreateWarmSandboxRequest, opts ...grpc.CallOption) (*CreateWarmSandboxResponse, error)
 	// Unfreezes a warm sandbox (cgroup.freeze = 0) so it can accept TCP work.
 	ActivateSandbox(ctx context.Context, in *ActivateSandboxRequest, opts ...grpc.CallOption) (*ActivateSandboxResponse, error)
@@ -93,7 +93,7 @@ func (c *nodeAgentServiceClient) DestroySandbox(ctx context.Context, in *Destroy
 // for forward compatibility.
 type NodeAgentServiceServer interface {
 	// Spawns a sandbox in new PID/UTS namespaces, waits for it to print READY
-	// (~2s cold init), then freezes it via cgroup.freeze so it idles at 0% CPU.
+	// (~450ms cold init), then freezes it via cgroup.freeze so it idles at 0% CPU.
 	CreateWarmSandbox(context.Context, *CreateWarmSandboxRequest) (*CreateWarmSandboxResponse, error)
 	// Unfreezes a warm sandbox (cgroup.freeze = 0) so it can accept TCP work.
 	ActivateSandbox(context.Context, *ActivateSandboxRequest) (*ActivateSandboxResponse, error)
@@ -227,7 +227,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ControllerServiceClient interface {
 	// Hands out a sandbox: from the warm pool if one is ready (WARM_HIT, <5ms),
-	// otherwise by spawning one on demand (COLD_MISS, ~2s).
+	// otherwise by spawning one on demand (COLD_MISS, ~450ms).
 	ClaimSandbox(ctx context.Context, in *ClaimSandboxRequest, opts ...grpc.CallOption) (*ClaimSandboxResponse, error)
 	// Returns a claimed sandbox; the controller destroys it on its worker node.
 	ReleaseSandbox(ctx context.Context, in *ReleaseSandboxRequest, opts ...grpc.CallOption) (*ReleaseSandboxResponse, error)
@@ -266,7 +266,7 @@ func (c *controllerServiceClient) ReleaseSandbox(ctx context.Context, in *Releas
 // for forward compatibility.
 type ControllerServiceServer interface {
 	// Hands out a sandbox: from the warm pool if one is ready (WARM_HIT, <5ms),
-	// otherwise by spawning one on demand (COLD_MISS, ~2s).
+	// otherwise by spawning one on demand (COLD_MISS, ~450ms).
 	ClaimSandbox(context.Context, *ClaimSandboxRequest) (*ClaimSandboxResponse, error)
 	// Returns a claimed sandbox; the controller destroys it on its worker node.
 	ReleaseSandbox(context.Context, *ReleaseSandboxRequest) (*ReleaseSandboxResponse, error)
