@@ -49,7 +49,7 @@ func (a *agent) CreateWarmSandbox(ctx context.Context, _ *pb.CreateWarmSandboxRe
 	}
 	id := newID()
 
-	// Takes ~2s: the sandbox's cold start happens here, off the claim path.
+	// Takes ~450ms: the sandbox's cold start happens here, off the claim path.
 	sb, err := spawnSandbox(a.binary, id, port)
 	if err != nil {
 		a.releasePort(port)

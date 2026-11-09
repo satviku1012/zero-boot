@@ -22,7 +22,7 @@ import (
 )
 
 // readyTimeout bounds how long we wait for READY; generous next to the
-// sandbox's 2s cold start, but short enough to fail a stuck spawn quickly.
+// sandbox's ~450ms cold start, but short enough to fail a stuck spawn quickly.
 const readyTimeout = 5 * time.Second
 
 // sandbox is one running workload process on this node.
