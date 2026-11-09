@@ -1,11 +1,11 @@
 // Command sandbox is the workload process that ZeroBoot keeps warm.
 //
 // It stands in for an expensive runtime (a language VM, an image loading its
-// dependencies, ...): it spends 2s "initializing", then serves newline-
-// delimited payloads over a raw TCP socket, one result line per payload.
+// dependencies, ...): it spends -init-delay "initializing", then serves
+// newline-delimited payloads over a raw TCP socket, one result line per payload.
 //
 // Contract with the node agent:
-//   - started as: sandbox -port <n> -id <sandbox_id>
+//   - started as: sandbox -port <n> -id <sandbox_id> [-init-delay <d>]
 //   - prints exactly one line, "READY", to stdout once it is listening
 //   - never writes to stdout again: the agent stops reading after READY, so
 //     more output could fill the pipe and block us. Logs go to stderr.
@@ -22,18 +22,21 @@ import (
 	"time"
 )
 
-// coldStart is the fake initialization cost a COLD_MISS has to pay and a
-// WARM_HIT skips, because warm sandboxes already paid it before being frozen.
-const coldStart = 2 * time.Second
+// defaultInitDelay is the simulated initialization cost a COLD_MISS pays and
+// a WARM_HIT skips, because warm sandboxes paid it before being frozen.
+// 450ms is the measured median for a fresh `docker run` of Python importing
+// numpy + pandas; see docs/cold-start-baseline.md for the method and data.
+const defaultInitDelay = 450 * time.Millisecond
 
 func main() {
 	port := flag.Int("port", 9001, "TCP port to listen on")
 	id := flag.String("id", "local", "sandbox ID assigned by the node agent")
+	initDelay := flag.Duration("init-delay", defaultInitDelay, "simulated cold-start time")
 	flag.Parse()
 	log.SetPrefix(fmt.Sprintf("[sandbox %s] ", *id))
 
-	// 1. Simulate booting a heavy runtime.
-	time.Sleep(coldStart)
+	// 1. Simulate booting a runtime.
+	time.Sleep(*initDelay)
 
 	// 2. Bind the listener *before* announcing readiness, so the agent never
 	//    hands out an address that would refuse connections. If the port is
