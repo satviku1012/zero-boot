@@ -24,7 +24,7 @@ This plan turns the requirements in `PROJECT.md` into sequential phases. Complet
 
 **Scope**
 
-- Implement `cmd/sandbox`: simulate a two-second startup, listen on its assigned TCP port, and process/echo payloads.
+- Implement `cmd/sandbox`: simulate a startup delay (`-init-delay`, default 450ms from `docs/cold-start-baseline.md`), listen on its assigned TCP port, and process/echo payloads.
 - Implement worker process lifecycle and Linux isolation in `cmd/node-agent/linux_isolation.go`: PID/UTS namespaces, waiting for the sandbox's `READY` line, a per-sandbox cgroup with freeze/unfreeze, and destruction. No memory limit is set (see `PROJECT.md` §2).
 - Provide a non-Linux build stub or equivalent build-tagged separation so development builds remain portable.
 - Expose create, activate, and destroy through the node-agent gRPC server on port `50052`.
@@ -94,7 +94,7 @@ This plan turns the requirements in `PROJECT.md` into sequential phases. Complet
 **Verification**
 
 - Send a normal request and confirm its payload reaches the worker over TCP and the JSON response contains all specified fields.
-- Confirm a warm request reports `WARM_HIT` and allocation latency below 5 ms under the benchmark conditions; confirm an empty-pool request reports `COLD_MISS` and includes the expected approximately two-second startup.
+- Confirm a warm request reports `WARM_HIT` and allocation latency below 5 ms under the benchmark conditions; confirm an empty-pool request reports `COLD_MISS` and includes the expected ~450ms startup.
 - Confirm normal requests release their lease and `simulate_hang=true` requests are reclaimed by controller timeout cleanup.
 - Confirm the gateway sets `TCP_NODELAY` and keepalive on its direct worker connection.
 
@@ -115,7 +115,7 @@ This plan turns the requirements in `PROJECT.md` into sequential phases. Complet
 
 - Build and start the Compose cluster; confirm both workers register/connect and the gateway and controller become reachable.
 - Run the benchmark script and verify it records five warm claims, three cold-miss burst claims, and the hanging request cleanup after the configured TTL.
-- Confirm observed allocation timings are reported in the benchmark output, with the warm target below 5 ms and cold startup near two seconds (allowing for environment and scheduling overhead).
+- Confirm observed allocation timings are reported in the benchmark output, with the warm target below 5 ms and cold startup near 450ms (allowing for environment and scheduling overhead).
 - Follow the README from a clean checkout to start the cluster, execute a request, run the benchmark, and shut the cluster down.
 
 **Definition of Done**
