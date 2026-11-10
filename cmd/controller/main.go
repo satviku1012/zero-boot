@@ -4,8 +4,9 @@
 //
 // Files:
 //
-//	main.go: config, worker connections, gRPC server
-//	pool.go: the warm pool (buffered channel) and ClaimSandbox
+//	main.go:   config, worker connections, gRPC server
+//	pool.go:   the warm pool (buffered channel), replenishment, ClaimSandbox
+//	leases.go: claimed-lease tracking, ReleaseSandbox, TTL cleanup
 package main
 
 import (
@@ -14,6 +15,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -27,6 +29,10 @@ const (
 	listenAddr = ":50051"
 	poolSize   = 5                // capacity of warmPool
 	rpcTimeout = 10 * time.Second // cap on one agent call (a spawn takes ~450ms)
+
+	replenishInterval = 1 * time.Second  // fallback refill check / spawn retry
+	leaseTTL          = 10 * time.Second // max time a sandbox may stay claimed
+	cleanupInterval   = 2 * time.Second  // how often expired leases are reaped
 )
 
 // worker is one node agent the controller can place sandboxes on.
@@ -63,13 +69,22 @@ func dialWorkers(list string) ([]*worker, error) {
 	return workers, nil
 }
 
-// controller implements pb.ControllerServiceServer. ReleaseSandbox falls
-// through to the embedded Unimplemented server until lease tracking exists.
+// controller implements pb.ControllerServiceServer.
 type controller struct {
+	// Embedding is required by grpc-go for forward compatibility.
 	pb.UnimplementedControllerServiceServer
-	workers  []*worker
-	next     atomic.Uint64     // round-robin cursor into workers
+
+	workers []*worker
+	next    atomic.Uint64 // round-robin cursor into workers
+
+	// Warm pool (pool.go). The channel needs no extra locking.
 	warmPool chan SandboxLease // frozen sandboxes, ready to wake
+	inFlight atomic.Int32      // spawns started but not yet in warmPool
+	refill   chan struct{}     // ClaimSandbox -> replenishLoop wake-up signal
+
+	// Claimed sandboxes (leases.go), keyed by sandbox ID.
+	mu           sync.Mutex
+	activeLeases map[string]ActiveLease
 }
 
 // pickWorker returns workers in round-robin order. The atomic counter makes
@@ -89,8 +104,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	c := &controller{workers: workers, warmPool: make(chan SandboxLease, poolSize)}
-	c.prewarm() // fills the pool in the background
+	c := &controller{
+		workers:      workers,
+		warmPool:     make(chan SandboxLease, poolSize),
+		refill:       make(chan struct{}, 1),
+		activeLeases: map[string]ActiveLease{},
+	}
+	go c.replenishLoop() // also does the initial fill
+	go c.cleanupLoop()
 
 	lis, err := net.Listen("tcp", listenAddr)
 	if err != nil {
