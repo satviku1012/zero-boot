@@ -2,43 +2,7 @@
 
 A distributed warm pool of isolated Linux sandboxes, written in Go and gRPC.
 
-Starting a fresh execution environment is slow: a new Python container that imports numpy and pandas takes a measured **~450ms** ([baseline](docs/cold-start-baseline.md)). ZeroBoot does that work ahead of time. Worker nodes pre-spawn sandbox processes, freeze them at 0% CPU with cgroup v2, and park them in the controller's warm pool. A request thaws one instead of starting one, which brings allocation down to **1.8ms p50 / 3.8ms p99**.
-
-## Results
-
-Measured with `scripts/benchmark.sh` against the four-container Docker Compose cluster on one laptop (Apple M3 Pro, Docker Desktop with Linux 6.12 and cgroup v2). Raw data: [docs/benchmark/results.csv](docs/benchmark/results.csv).
-
-| Allocation latency | n | p50 | p95 | p99 | max |
-|---|---:|---:|---:|---:|---:|
-| **Warm hit** (paced, steady state) | 1,000 | 1.81 ms | 2.48 ms | 3.83 ms | 15.37 ms |
-| **Cold start** (pool empty) | 103 | 480.5 ms | 505.2 ms | 508.8 ms | 512.6 ms |
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/latency-percentiles-dark.svg">
-  <img alt="Bar chart of allocation latency percentiles: warm hits stay in single-digit milliseconds while cold starts take about 480ms" src="docs/images/latency-percentiles-light.svg">
-</picture>
-
-Warm hits are a gRPC round trip plus a write to `cgroup.freeze`. The distribution is tight, with a small tail:
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/warm-latency-histogram-dark.svg">
-  <img alt="Histogram of warm-hit allocation latency, clustered between 1 and 3 milliseconds" src="docs/images/warm-latency-histogram-light.svg">
-</picture>
-
-A burst larger than the pool never fails. The first five requests get warm sandboxes, and the rest fall back to a cold start while the pool refills in the background:
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/burst-behavior-dark.svg">
-  <img alt="Dot plot of 10-request bursts: the five fastest requests in each burst are warm hits near 0ms, the other five are cold starts near 490ms" src="docs/images/burst-behavior-light.svg">
-</picture>
-
-Other results from the same run:
-
-- **Every check passed.** The 5 rapid requests were all warm (1.2–1.5ms), and the 3 burst requests after them were all cold (~472ms).
-- **The hung lease was cleaned up.** It was destroyed by the TTL cleanup after 11.9s: the 10s TTL plus up to one 2s cleanup tick.
-- **The isolation was real.** All 1,215 sandboxes created during the run were placed in a real cgroup, with 0 signal fallbacks and 0 failed requests.
-- **A full request takes longer than allocation.** End-to-end HTTP latency for a warm request is 8.3ms p50 / 12.3ms p99. That includes streaming the task over TCP and the synchronous `ReleaseSandbox`, which kills the process.
-- **Concurrency adds a little.** Warm hits during a 10-request burst take 2.3ms p50 / 6.7ms p99. In the paced run, 4 of 1,000 warm hits went over 5ms.
+Starting a fresh execution environment is slow: a new Python container that imports numpy and pandas takes a measured **~450ms** ([baseline](docs/cold-start-baseline.md)). ZeroBoot does that work ahead of time. Worker nodes pre-spawn sandbox processes, freeze them at 0% CPU with cgroup v2, and park them in the controller's warm pool. A request thaws one instead of starting one, which brings allocation down to **1.8ms p50 / 3.8ms p99**, compared with ~480ms for a cold start.
 
 ## Architecture
 
@@ -105,9 +69,17 @@ sequenceDiagram
 
 Sandboxes are single-use. Release destroys the sandbox instead of returning it to the pool, so no state can leak from one task to the next.
 
-## Running it
+### Design notes
 
-Requires Docker with cgroup v2 (Docker Desktop or any recent Linux). The benchmark also needs `curl` and `jq`.
+- **No locks on the claim path.** The warm pool is a buffered channel. A `select` with a `default` case either takes a sandbox at once or falls through to a cold start at once, so a claim never waits on the pool.
+- **The refill can't overfill.** Only one goroutine starts spawns, and it keeps `len(pool) + in-flight spawns <= 5`, so a finished spawn's send into the channel never blocks.
+- **The cleanup loop holds the lock briefly.** It removes expired leases under a mutex, then makes the slow `DestroySandbox` calls after releasing it.
+- **Freezing uses `cgroup.freeze`.** The node agent falls back to `SIGSTOP`/`SIGCONT` where cgroups aren't writable, such as macOS during development.
+- **There is no memory limit.** Setting `memory.max` inside a container runs into cgroup v2's "no internal processes" rule, and working around it was out of scope.
+
+## Getting started
+
+Requires Docker with cgroup v2 (Docker Desktop or any recent Linux). The benchmarks also need `curl`, `jq` and `python3`.
 
 ```sh
 docker compose up --build -d     # or: make up
@@ -121,20 +93,69 @@ curl -s -X POST localhost:8080/execute -d '{"payload": "hello"}'
 `pid=1` shows that the sandbox runs in its own PID namespace. Add `?simulate_hang=true` to skip the release, and the controller's cleanup loop destroys the sandbox about 10s later.
 
 ```sh
-./scripts/benchmark.sh                        # or: make bench (about 5 minutes)
-python3 scripts/plot_benchmark.py bench-results/results.csv docs/images   # redraw charts
-docker compose down                           # or: make down
+docker compose logs -f controller   # WARM_HIT / COLD_MISS, refills, expiries
+docker compose down                 # or: make down
 ```
 
-`SAMPLES`, `INTERVAL`, `BURSTS` and `GATEWAY_PORT` override the benchmark defaults. The script exits non-zero if any check fails.
+Set `GATEWAY_PORT` to publish the gateway on a port other than 8080.
 
-## Design notes
+## Performance
 
-- **No locks on the claim path.** The warm pool is a buffered channel. A `select` with a `default` case either takes a sandbox at once or falls through to a cold start at once, so a claim never waits on the pool.
-- **The refill can't overfill.** Only one goroutine starts spawns, and it keeps `len(pool) + in-flight spawns <= 5`, so a finished spawn's send into the channel never blocks.
-- **The cleanup loop holds the lock briefly.** It removes expired leases under a mutex, then makes the slow `DestroySandbox` calls after releasing it.
-- **Freezing uses `cgroup.freeze`.** The node agent falls back to `SIGSTOP`/`SIGCONT` where cgroups aren't writable, such as macOS during development.
-- **There is no memory limit.** Setting `memory.max` inside a container runs into cgroup v2's "no internal processes" rule, and working around it was out of scope.
+All numbers come from the four-container Compose cluster on one laptop (Apple M3 Pro, Docker Desktop with Linux 6.12 and cgroup v2). Raw data: [results.csv](docs/benchmark/results.csv) and [sweep.csv](docs/benchmark/sweep.csv).
+
+| Allocation latency | n | p50 | p95 | p99 | max |
+|---|---:|---:|---:|---:|---:|
+| **Warm hit** (paced, steady state) | 1,000 | 1.81 ms | 2.48 ms | 3.83 ms | 15.37 ms |
+| **Cold start** (pool empty) | 103 | 480.5 ms | 505.2 ms | 508.8 ms | 512.6 ms |
+
+### Warm hits vs cold starts
+
+![Allocation latency: cumulative distribution of warm hits and cold starts, and latency by rank within bursts of 10 concurrent requests](docs/images/allocation-latency.svg)
+
+A warm hit is a gRPC round trip plus a write to `cgroup.freeze`, and 99% of them finish in under 4ms. A burst larger than the pool never fails: in every 10-request burst, the first five got warm sandboxes, and the other five fell back to cold starts while the pool refilled.
+
+### Under sustained load
+
+![Warm pool under load: warm-hit rate, p50 and p99 allocation latency versus offered load from 2 to 32 requests per second](docs/images/load-sweep.svg)
+
+Up to 8 requests per second, every request was a warm hit, with p99 under 10ms. Beyond about 10 per second, the pool can't refill fast enough. One refill takes ~480ms and at most 5 run at once, so the pool supplies about 5 ÷ 0.48 s ≈ 10 warm sandboxes per second.
+
+The measured warm-hit rate follows that model closely: 83% at 12/s, 62.5% at 16/s and 32.5% at 32/s. p99 jumps to cold-start latency as soon as some requests miss (12/s), and p50 follows once fewer than half are warm (24/s). All 2,940 requests in the sweep succeeded. Every request is still served at any load; a larger pool or faster refill would move the point where cold starts begin.
+
+### Other results
+
+- **A full request takes longer than allocation.** End-to-end HTTP latency for a warm request is 8.3ms p50 / 12.3ms p99. That includes streaming the task over TCP and the synchronous `ReleaseSandbox`, which kills the process.
+- **Concurrency adds a little.** Warm hits during a 10-request burst take 2.3ms p50 / 6.7ms p99. In the paced run, 4 of 1,000 warm hits went over 5ms.
+
+### Reproducing
+
+```sh
+./scripts/benchmark.sh                     # about 5 minutes, writes bench-results/results.csv
+python3 scripts/load_sweep.py              # about 5 minutes, writes bench-results/sweep.csv
+python3 scripts/plot_benchmark.py bench-results docs/images
+```
+
+## Testing
+
+`scripts/benchmark.sh` (or `make bench`) checks the cluster end to end, prints PASS or FAIL for each check, and exits non-zero if any check fails:
+
+| Check | Last run |
+|---|---|
+| 5 rapid requests are all `WARM_HIT` with allocation under 5ms | PASS (1.2–1.5ms) |
+| 3 requests right after them, with the pool drained, are all `COLD_MISS` at 400–1000ms | PASS (~472ms) |
+| A `simulate_hang` lease is destroyed by the TTL cleanup between 10s and 13s | PASS (11.9s) |
+| Every sandbox the workers created used a real cgroup, not the signal fallback | PASS (1,215 of 1,215) |
+| No request failed | PASS (0 errors) |
+
+`SAMPLES`, `INTERVAL` and `BURSTS` shorten or lengthen the run, for example `SAMPLES=50 BURSTS=2 ./scripts/benchmark.sh` for a quick check.
+
+The code also builds and vets cleanly on macOS, where the Linux-only isolation is replaced by a stub:
+
+```sh
+make build && make vet
+```
+
+There are no Go unit tests yet. During development, the controller was also run under Go's race detector against overlapping claims, releases and expiries, which found no races.
 
 ## Limitations
 
@@ -142,4 +163,5 @@ docker compose down                           # or: make down
 - **The isolation is not a security boundary.** PID and UTS namespaces and a freezer cgroup aren't enough; there is no seccomp, user namespace or filesystem isolation. Worker containers also run privileged.
 - **The controller is a single point of failure.** It has one process and in-memory state, with no replication or recovery after a restart.
 - **Placement is plain round robin.** It doesn't account for node load or health.
-- **The benchmark runs on one machine.** All four containers share one laptop, so nothing here measures network latency between real hosts.
+- **The pool size is fixed.** A pool of 5 sustains about 10 warm requests per second. Beyond that, extra requests become cold starts.
+- **The benchmarks run on one machine.** All four containers and the client share one laptop, so nothing here measures network latency between real hosts.
