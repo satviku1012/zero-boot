@@ -40,43 +40,6 @@ Thin arrows are the **control plane** (gRPC). Thick arrows are the **data plane*
 | [`cmd/node-agent`](cmd/node-agent) | Runs on each worker. Spawns sandboxes in new PID and UTS namespaces, puts each in its own cgroup, and freezes, thaws or kills it on request. |
 | [`cmd/sandbox`](cmd/sandbox) | The workload. Simulates a 450ms cold start, then answers one line of input per line over TCP. |
 
-### One request
-
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant G as Gateway
-    participant K as Controller
-    participant A as Node agent
-    participant S as Sandbox
-
-    C->>G: POST /execute
-    G->>K: ClaimSandbox
-    alt pool has a frozen sandbox (WARM_HIT)
-        K->>A: ActivateSandbox (thaw)
-    else pool is empty (COLD_MISS)
-        K->>A: CreateWarmSandbox (~450ms)
-        K->>A: ActivateSandbox (thaw)
-    end
-    K-->>G: sandbox ID + address (node-1:9003)
-    G->>S: task over TCP
-    S-->>G: result
-    G->>K: ReleaseSandbox
-    K->>A: DestroySandbox
-    G-->>C: JSON metrics
-    Note over K,A: replenishLoop refills the pool in the background
-```
-
-Sandboxes are single-use. Release destroys the sandbox instead of returning it to the pool, so no state can leak from one task to the next.
-
-### Design notes
-
-- **No locks on the claim path.** The warm pool is a buffered channel. A `select` with a `default` case either takes a sandbox at once or falls through to a cold start at once, so a claim never waits on the pool.
-- **The refill can't overfill.** Only one goroutine starts spawns, and it keeps `len(pool) + in-flight spawns <= 5`, so a finished spawn's send into the channel never blocks.
-- **The cleanup loop holds the lock briefly.** It removes expired leases under a mutex, then makes the slow `DestroySandbox` calls after releasing it.
-- **Freezing uses `cgroup.freeze`.** The node agent falls back to `SIGSTOP`/`SIGCONT` where cgroups aren't writable, such as macOS during development.
-- **There is no memory limit.** Setting `memory.max` inside a container runs into cgroup v2's "no internal processes" rule, and working around it was out of scope.
-
 ## Getting started
 
 Requires Docker with cgroup v2 (Docker Desktop or any recent Linux). The benchmarks also need `curl`, `jq` and `python3`.
@@ -121,19 +84,6 @@ A warm hit is a gRPC round trip plus a write to `cgroup.freeze`, and 99% of them
 Up to 8 requests per second, every request was a warm hit, with p99 under 10ms. Beyond about 10 per second, the pool can't refill fast enough. One refill takes ~480ms and at most 5 run at once, so the pool supplies about 5 ÷ 0.48 s ≈ 10 warm sandboxes per second.
 
 The measured warm-hit rate follows that model closely: 83% at 12/s, 62.5% at 16/s and 32.5% at 32/s. p99 jumps to cold-start latency as soon as some requests miss (12/s), and p50 follows once fewer than half are warm (24/s). All 2,940 requests in the sweep succeeded. Every request is still served at any load; a larger pool or faster refill would move the point where cold starts begin.
-
-### Other results
-
-- **A full request takes longer than allocation.** End-to-end HTTP latency for a warm request is 8.3ms p50 / 12.3ms p99. That includes streaming the task over TCP and the synchronous `ReleaseSandbox`, which kills the process.
-- **Concurrency adds a little.** Warm hits during a 10-request burst take 2.3ms p50 / 6.7ms p99. In the paced run, 4 of 1,000 warm hits went over 5ms.
-
-### Reproducing
-
-```sh
-./scripts/benchmark.sh                     # about 5 minutes, writes bench-results/results.csv
-python3 scripts/load_sweep.py              # about 5 minutes, writes bench-results/sweep.csv
-python3 scripts/plot_benchmark.py bench-results docs/images
-```
 
 ## Testing
 
