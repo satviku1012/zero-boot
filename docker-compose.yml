@@ -1,0 +1,55 @@
+# ZeroBoot cluster: two worker nodes, the controller, and the gateway on one
+# bridge network. Service names double as hostnames, so the controller
+# reaches node-1:50052 and the gateway dials sandboxes at node-1:9001 etc.
+#
+#   docker compose up --build -d     (or: make up)
+#   ./scripts/benchmark.sh           (or: make bench)
+
+name: zeroboot
+
+# Shared settings for every service: same image, same env file, same network.
+# Only the controller builds the image; the others reuse it rather than
+# pulling (four parallel builds of one tag would collide).
+x-zeroboot: &zeroboot
+  image: zeroboot:latest
+  pull_policy: never
+  env_file: configs/cluster.env
+  networks: [zeroboot]
+  restart: unless-stopped
+
+# Worker nodes create PID/UTS namespaces and per-sandbox cgroups, which needs
+# privileged mode. With a private cgroup namespace, Docker mounts the
+# container's own cgroup v2 tree read-write at /sys/fs/cgroup, so sandbox
+# cgroups stay inside this container's slice of the host hierarchy.
+x-node: &node
+  <<: *zeroboot
+  command: ["/usr/local/bin/node-agent"]
+  privileged: true
+  cgroup: private
+
+services:
+  node-1:
+    <<: *node
+    hostname: node-1
+
+  node-2:
+    <<: *node
+    hostname: node-2
+
+  controller:
+    <<: *zeroboot
+    build: .
+    pull_policy: build
+    command: ["/usr/local/bin/controller"]
+    depends_on: [node-1, node-2]
+
+  gateway:
+    <<: *zeroboot
+    command: ["/usr/local/bin/gateway"]
+    depends_on: [controller]
+    ports:
+      - "${GATEWAY_PORT:-8080}:8080" # the only port published to the host
+
+networks:
+  zeroboot:
+    driver: bridge
