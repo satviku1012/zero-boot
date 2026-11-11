@@ -1,6 +1,12 @@
 // Command gateway is ZeroBoot's HTTP entry point. POST /execute claims a
-// sandbox from the controller over gRPC, releases it, and replies with JSON
-// metrics.
+// sandbox from the controller over gRPC, streams the task straight to that
+// sandbox over raw TCP (stream.go), releases the sandbox, and replies with
+// JSON metrics.
+//
+// Files:
+//
+//	main.go:   config, HTTP server, the /execute handler (gRPC control plane)
+//	stream.go: the raw TCP exchange with a sandbox (data plane)
 package main
 
 import (
@@ -35,6 +41,7 @@ type executeResponse struct {
 	Node                string  `json:"node"`
 	Status              string  `json:"status"` // WARM_HIT or COLD_MISS
 	AllocationLatencyMs float64 `json:"allocation_latency_ms"`
+	Output              string  `json:"output"`
 }
 
 type gateway struct {
@@ -67,19 +74,27 @@ func (g *gateway) execute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// simulate_hang skips the release, leaving the lease for the
-	// controller's 10s cleanup loop to reclaim (what the benchmark verifies).
+	output, streamErr := streamTask(claim.TcpAddress, req.Payload)
+
+	// Release even if streaming failed, so the sandbox doesn't wait out the
+	// TTL. simulate_hang skips it, leaving the lease for the controller's
+	// 10s cleanup loop to reclaim (what the benchmark verifies).
 	if hang {
 		log.Printf("simulate_hang: leaving %s claimed for TTL cleanup", claim.SandboxId)
 	} else {
 		g.release(claim.SandboxId)
 	}
 
+	if streamErr != nil {
+		writeError(w, http.StatusBadGateway, "stream to "+claim.TcpAddress+": "+streamErr.Error())
+		return
+	}
 	writeJSON(w, http.StatusOK, executeResponse{
 		SandboxID:           claim.SandboxId,
 		Node:                claim.Node,
 		Status:              claim.Status.String(),
 		AllocationLatencyMs: float64(alloc.Microseconds()) / 1000, // ms with µs precision
+		Output:              output,
 	})
 }
 
