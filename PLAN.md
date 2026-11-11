@@ -1,6 +1,6 @@
 # ZeroBoot Implementation Plan
 
-This plan turns the requirements in `PROJECT.md` into sequential phases. Complete and verify each phase before starting the next. Keep the implementation within the specified Go standard library, gRPC, and protobuf dependencies; preserve macOS build safety for Linux-only isolation code.
+This plan breaks ZeroBoot into sequential phases. Complete and verify each phase before starting the next. Keep the implementation within the specified Go standard library, gRPC, and protobuf dependencies; preserve macOS build safety for Linux-only isolation code.
 
 ## Phase 1: Module and gRPC Contract
 
@@ -25,7 +25,7 @@ This plan turns the requirements in `PROJECT.md` into sequential phases. Complet
 **Scope**
 
 - Implement `cmd/sandbox`: simulate a startup delay (`-init-delay`, default 450ms from `docs/cold-start-baseline.md`), listen on its assigned TCP port, and process/echo payloads.
-- Implement worker process lifecycle and Linux isolation in `cmd/node-agent/linux_isolation.go`: PID/UTS namespaces, waiting for the sandbox's `READY` line, a per-sandbox cgroup with freeze/unfreeze, and destruction. No memory limit is set (see `PROJECT.md` §2).
+- Implement worker process lifecycle and Linux isolation in `cmd/node-agent/linux_isolation.go`: PID/UTS namespaces, waiting for the sandbox's `READY` line, a per-sandbox cgroup with freeze/unfreeze, and destruction. No memory limit is set: enabling the memory controller inside a container runs into the cgroup v2 "no internal processes" rule.
 - Provide a non-Linux build stub or equivalent build-tagged separation so development builds remain portable.
 - Expose create, activate, and destroy through the node-agent gRPC server on port `50052`.
 
@@ -124,4 +124,4 @@ This plan turns the requirements in `PROJECT.md` into sequential phases. Complet
 
 ## Completion Gate
 
-The project is complete when all six phase Definitions of Done are met and the three architectural guarantees in `PROJECT.md` are demonstrated end to end: distributed warm allocation through gRPC, Linux namespace/cgroup isolation, and direct TCP streaming with bounded lease cleanup.
+The project is complete when all six phase Definitions of Done are met and ZeroBoot's three architectural guarantees are demonstrated end to end: distributed warm allocation through gRPC, Linux namespace/cgroup isolation, and direct TCP streaming with bounded lease cleanup.
