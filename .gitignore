@@ -4,6 +4,9 @@
 *.test
 *.out
 
+# Default benchmark output (the README run is kept in docs/benchmark/)
+bench-results/
+
 # Coverage
 coverage.*
 *.coverprofile
