@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="560" viewBox="0 0 1240 560" font-family="'Times New Roman', Times, 'STIX Two Text', Georgia, serif" role="img" aria-label="Warm pool under load">
+<title>Warm pool under load</title>
+<rect width="1240" height="560" fill="#ffffff"/>
+<text x="88.0" y="46.0" font-size="28" font-weight="700" fill="#111111" text-anchor="start">Warm pool under load</text>
+<text x="88.0" y="66.0" font-size="13" font-weight="400" fill="#555555" text-anchor="start">2 worker nodes · pool of 5 · ~480 ms cold start · open-loop requests · localhost</text>
+<line x1="870" y1="40" x2="900" y2="40" stroke="#3366dd" stroke-width="2.5"/>
+<circle cx="885" cy="40" r="3.5" fill="#3366dd"/>
+<text x="910.0" y="44.0" font-size="13" font-weight="400" fill="#111111" text-anchor="start">Measured (pool of 5)</text>
+<line x1="870" y1="60" x2="900" y2="60" stroke="#d4782f" stroke-width="2.5" stroke-dasharray="6 4"/>
+<text x="910.0" y="64.0" font-size="13" font-weight="400" fill="#111111" text-anchor="start">Refill model: 5 ÷ 0.48 s ≈ 10 warm/s</text>
+<text x="108.0" y="108.0" font-size="16" font-weight="700" fill="#111111" text-anchor="start">Warm-hit rate</text>
+<line x1="108" y1="410.0" x2="428" y2="410.0" stroke="#e6e6e6"/>
+<line x1="103" y1="410.0" x2="108" y2="410.0" stroke="#111111"/>
+<text x="99.0" y="414.5" font-size="13" font-weight="400" fill="#111111" text-anchor="end">0</text>
+<line x1="108" y1="354.0" x2="428" y2="354.0" stroke="#e6e6e6"/>
+<line x1="103" y1="354.0" x2="108" y2="354.0" stroke="#111111"/>
+<text x="99.0" y="358.5" font-size="13" font-weight="400" fill="#111111" text-anchor="end">20</text>
+<line x1="108" y1="298.0" x2="428" y2="298.0" stroke="#e6e6e6"/>
+<line x1="103" y1="298.0" x2="108" y2="298.0" stroke="#111111"/>
+<text x="99.0" y="302.5" font-size="13" font-weight="400" fill="#111111" text-anchor="end">40</text>
+<line x1="108" y1="242.0" x2="428" y2="242.0" stroke="#e6e6e6"/>
+<line x1="103" y1="242.0" x2="108" y2="242.0" stroke="#111111"/>
+<text x="99.0" y="246.5" font-size="13" font-weight="400" fill="#111111" text-anchor="end">60</text>
+<line x1="108" y1="186.0" x2="428" y2="186.0" stroke="#e6e6e6"/>
+<line x1="103" y1="186.0" x2="108" y2="186.0" stroke="#111111"/>
+<text x="99.0" y="190.5" font-size="13" font-weight="400" fill="#111111" text-anchor="end">80</text>
+<line x1="108" y1="130.0" x2="428" y2="130.0" stroke="#e6e6e6"/>
+<line x1="103" y1="130.0" x2="108" y2="130.0" stroke="#111111"/>
+<text x="99.0" y="134.5" font-size="13" font-weight="400" fill="#111111" text-anchor="end">100</text>
+<line x1="118.0" y1="410" x2="118.0" y2="415" stroke="#111111"/>
+<text x="118.0" y="431.0" font-size="13" font-weight="400" fill="#111111" text-anchor="middle">2</text>
+<line x1="193.0" y1="410" x2="193.0" y2="415" stroke="#111111"/>
+<text x="193.0" y="431.0" font-size="13" font-weight="400" fill="#111111" text-anchor="middle">4</text>
+<line x1="268.0" y1="410" x2="268.0" y2="415" stroke="#111111"/>
+<text x="268.0" y="431.0" font-size="13" font-weight="400" fill="#111111" text-anchor="middle">8</text>
+<line x1="343.0" y1="410" x2="343.0" y2="415" stroke="#111111"/>
+<text x="343.0" y="431.0" font-size="13" font-weight="400" fill="#111111" text-anchor="middle">16</text>
+<line x1="418.0" y1="410" x2="418.0" y2="415" stroke="#111111"/>
+<text x="418.0" y="431.0" font-size="13" font-weight="400" fill="#111111" text-anchor="middle">32</text>
+<path d="M108,122V410H428" fill="none" stroke="#111111"/>
+<text x="268.0" y="452.0" font-size="14" font-weight="400" fill="#111111" text-anchor="middle">Offered load (requests/s)</text>
+<text x="56.0" y="270.0" font-size="14" font-weight="400" fill="#111111" text-anchor="middle" transform="rotate(-90 56.0 270.0)">Warm hits (%)</text>
+<polygon points="118.0,130.0 193.0,130.0 268.0,130.0 311.9,176.7 343.0,235.0 386.9,291.0 418.0,318.1 418.0,319.0 386.9,293.3 343.0,235.0 311.9,176.7 268.0,130.0 193.0,130.0 118.0,130.0" fill="#3366dd" fill-opacity="0.16"/>
+<polyline points="118.0,130.0 123.0,130.0 128.0,130.0 133.0,130.0 138.0,130.0 143.0,130.0 148.0,130.0 153.0,130.0 158.0,130.0 163.0,130.0 168.0,130.0 173.0,130.0 178.0,130.0 183.0,130.0 188.0,130.0 193.0,130.0 198.0,130.0 203.0,130.0 208.0,130.0 213.0,130.0 218.0,130.0 223.0,130.0 228.0,130.0 233.0,130.0 238.0,130.0 243.0,130.0 248.0,130.0 253.0,130.0 258.0,130.0 263.0,130.0 268.0,130.0 273.0,130.0 278.0,130.0 283.0,130.0 288.0,130.0 293.0,130.0 298.0,133.7 303.0,146.2 308.0,158.1 313.0,169.5 318.0,180.3 323.0,190.7 328.0,200.6 333.0,210.1 338.0,219.1 343.0,227.7 348.0,235.9 353.0,243.8 358.0,251.3 363.0,258.5 368.0,265.3 373.0,271.8 378.0,278.1 383.0,284.0 388.0,289.7 393.0,295.2 398.0,300.3 403.0,305.3 408.0,310.0 413.0,314.5 418.0,318.9" fill="none" stroke="#d4782f" stroke-width="2.5" stroke-linejoin="round" stroke-dasharray="6 4"/>
+<polyline points="118.0,130.0 193.0,130.0 268.0,130.0 311.9,176.7 343.0,235.0 386.9,292.2 418.0,318.1" fill="none" stroke="#3366dd" stroke-width="2.5" stroke-linejoin="round"/>
+<circle cx="118.0" cy="130.0" r="3.5" fill="#3366dd"/>
+<circle cx="193.0" cy="130.0" r="3.5" fill="#3366dd"/>
+<circle cx="268.0" cy="130.0" r="3.5" fill="#3366dd"/>
+<circle cx="311.9" cy="176.7" r="3.5" fill="#3366dd"/>
+<circle cx="343.0" cy="235.0" r="3.5" fill="#3366dd"/>
+<circle cx="386.9" cy="292.2" r="3.5" fill="#3366dd"/>
+<circle cx="418.0" cy="318.1" r="3.5" fill="#3366dd"/>
+<text x="488.0" y="108.0" font-size="16" font-weight="700" fill="#111111" text-anchor="start">p50 allocation latency (ms)</text>
+<line x1="488" y1="410.0" x2="808" y2="410.0" stroke="#e6e6e6"/>
+<line x1="483" y1="410.0" x2="488" y2="410.0" stroke="#111111"/>
+<text x="479.0" y="414.5" font-size="13" font-weight="400" fill="#111111" text-anchor="end">0</text>
+<line x1="488" y1="354.0" x2="808" y2="354.0" stroke="#e6e6e6"/>
+<line x1="483" y1="354.0" x2="488" y2="354.0" stroke="#111111"/>
+<text x="479.0" y="358.5" font-size="13" font-weight="400" fill="#111111" text-anchor="end">100</text>
+<line x1="488" y1="298.0" x2="808" y2="298.0" stroke="#e6e6e6"/>
+<line x1="483" y1="298.0" x2="488" y2="298.0" stroke="#111111"/>
+<text x="479.0" y="302.5" font-size="13" font-weight="400" fill="#111111" text-anchor="end">200</text>
+<line x1="488" y1="242.0" x2="808" y2="242.0" stroke="#e6e6e6"/>
+<line x1="483" y1="242.0" x2="488" y2="242.0" stroke="#111111"/>
+<text x="479.0" y="246.5" font-size="13" font-weight="400" fill="#111111" text-anchor="end">300</text>
+<line x1="488" y1="186.0" x2="808" y2="186.0" stroke="#e6e6e6"/>
+<line x1="483" y1="186.0" x2="488" y2="186.0" stroke="#111111"/>
+<text x="479.0" y="190.5" font-size="13" font-weight="400" fill="#111111" text-anchor="end">400</text>
+<line x1="488" y1="130.0" x2="808" y2="130.0" stroke="#e6e6e6"/>
+<line x1="483" y1="130.0" x2="488" y2="130.0" stroke="#111111"/>
+<text x="479.0" y="134.5" font-size="13" font-weight="400" fill="#111111" text-anchor="end">500</text>
+<line x1="498.0" y1="410" x2="498.0" y2="415" stroke="#111111"/>
+<text x="498.0" y="431.0" font-size="13" font-weight="400" fill="#111111" text-anchor="middle">2</text>
+<line x1="573.0" y1="410" x2="573.0" y2="415" stroke="#111111"/>
+<text x="573.0" y="431.0" font-size="13" font-weight="400" fill="#111111" text-anchor="middle">4</text>
+<line x1="648.0" y1="410" x2="648.0" y2="415" stroke="#111111"/>
+<text x="648.0" y="431.0" font-size="13" font-weight="400" fill="#111111" text-anchor="middle">8</text>
+<line x1="723.0" y1="410" x2="723.0" y2="415" stroke="#111111"/>
+<text x="723.0" y="431.0" font-size="13" font-weight="400" fill="#111111" text-anchor="middle">16</text>
+<line x1="798.0" y1="410" x2="798.0" y2="415" stroke="#111111"/>
+<text x="798.0" y="431.0" font-size="13" font-weight="400" fill="#111111" text-anchor="middle">32</text>
+<path d="M488,122V410H808" fill="none" stroke="#111111"/>
+<text x="648.0" y="452.0" font-size="14" font-weight="400" fill="#111111" text-anchor="middle">Offered load (requests/s)</text>
+<polygon points="498.0,409.1 573.0,408.9 648.0,409.0 691.9,408.6 723.0,408.5 766.9,153.0 798.0,154.0 798.0,154.1 766.9,153.7 723.0,408.7 691.9,408.7 648.0,409.0 573.0,409.0 498.0,409.1" fill="#3366dd" fill-opacity="0.16"/>
+<polyline points="498.0,409.1 573.0,408.9 648.0,409.0 691.9,408.7 723.0,408.6 766.9,153.6 798.0,154.0" fill="none" stroke="#3366dd" stroke-width="2.5" stroke-linejoin="round"/>
+<circle cx="498.0" cy="409.1" r="3.5" fill="#3366dd"/>
+<circle cx="573.0" cy="408.9" r="3.5" fill="#3366dd"/>
+<circle cx="648.0" cy="409.0" r="3.5" fill="#3366dd"/>
+<circle cx="691.9" cy="408.7" r="3.5" fill="#3366dd"/>
+<circle cx="723.0" cy="408.6" r="3.5" fill="#3366dd"/>
+<circle cx="766.9" cy="153.6" r="3.5" fill="#3366dd"/>
+<circle cx="798.0" cy="154.0" r="3.5" fill="#3366dd"/>
+<text x="868.0" y="108.0" font-size="16" font-weight="700" fill="#111111" text-anchor="start">p99 allocation latency (ms)</text>
+<line x1="868" y1="410.0" x2="1188" y2="410.0" stroke="#e6e6e6"/>
+<line x1="863" y1="410.0" x2="868" y2="410.0" stroke="#111111"/>
+<text x="859.0" y="414.5" font-size="13" font-weight="400" fill="#111111" text-anchor="end">0</text>
+<line x1="868" y1="354.0" x2="1188" y2="354.0" stroke="#e6e6e6"/>
+<line x1="863" y1="354.0" x2="868" y2="354.0" stroke="#111111"/>
+<text x="859.0" y="358.5" font-size="13" font-weight="400" fill="#111111" text-anchor="end">100</text>
+<line x1="868" y1="298.0" x2="1188" y2="298.0" stroke="#e6e6e6"/>
+<line x1="863" y1="298.0" x2="868" y2="298.0" stroke="#111111"/>
+<text x="859.0" y="302.5" font-size="13" font-weight="400" fill="#111111" text-anchor="end">200</text>
+<line x1="868" y1="242.0" x2="1188" y2="242.0" stroke="#e6e6e6"/>
+<line x1="863" y1="242.0" x2="868" y2="242.0" stroke="#111111"/>
+<text x="859.0" y="246.5" font-size="13" font-weight="400" fill="#111111" text-anchor="end">300</text>
+<line x1="868" y1="186.0" x2="1188" y2="186.0" stroke="#e6e6e6"/>
+<line x1="863" y1="186.0" x2="868" y2="186.0" stroke="#111111"/>
+<text x="859.0" y="190.5" font-size="13" font-weight="400" fill="#111111" text-anchor="end">400</text>
+<line x1="868" y1="130.0" x2="1188" y2="130.0" stroke="#e6e6e6"/>
+<line x1="863" y1="130.0" x2="868" y2="130.0" stroke="#111111"/>
+<text x="859.0" y="134.5" font-size="13" font-weight="400" fill="#111111" text-anchor="end">500</text>
+<line x1="878.0" y1="410" x2="878.0" y2="415" stroke="#111111"/>
+<text x="878.0" y="431.0" font-size="13" font-weight="400" fill="#111111" text-anchor="middle">2</text>
+<line x1="953.0" y1="410" x2="953.0" y2="415" stroke="#111111"/>
+<text x="953.0" y="431.0" font-size="13" font-weight="400" fill="#111111" text-anchor="middle">4</text>
+<line x1="1028.0" y1="410" x2="1028.0" y2="415" stroke="#111111"/>
+<text x="1028.0" y="431.0" font-size="13" font-weight="400" fill="#111111" text-anchor="middle">8</text>
+<line x1="1103.0" y1="410" x2="1103.0" y2="415" stroke="#111111"/>
+<text x="1103.0" y="431.0" font-size="13" font-weight="400" fill="#111111" text-anchor="middle">16</text>
+<line x1="1178.0" y1="410" x2="1178.0" y2="415" stroke="#111111"/>
+<text x="1178.0" y="431.0" font-size="13" font-weight="400" fill="#111111" text-anchor="middle">32</text>
+<path d="M868,122V410H1188" fill="none" stroke="#111111"/>
+<text x="1028.0" y="452.0" font-size="14" font-weight="400" fill="#111111" text-anchor="middle">Offered load (requests/s)</text>
+<polygon points="878.0,408.4 953.0,401.1 1028.0,402.1 1071.9,135.2 1103.0,133.5 1146.9,134.1 1178.0,135.2 1178.0,136.9 1146.9,135.0 1103.0,137.2 1071.9,136.2 1028.0,408.1 953.0,408.6 878.0,408.9" fill="#3366dd" fill-opacity="0.16"/>
+<polyline points="878.0,408.7 953.0,408.4 1028.0,403.6 1071.9,136.1 1103.0,134.1 1146.9,134.6 1178.0,135.9" fill="none" stroke="#3366dd" stroke-width="2.5" stroke-linejoin="round"/>
+<circle cx="878.0" cy="408.7" r="3.5" fill="#3366dd"/>
+<circle cx="953.0" cy="408.4" r="3.5" fill="#3366dd"/>
+<circle cx="1028.0" cy="403.6" r="3.5" fill="#3366dd"/>
+<circle cx="1071.9" cy="136.1" r="3.5" fill="#3366dd"/>
+<circle cx="1103.0" cy="134.1" r="3.5" fill="#3366dd"/>
+<circle cx="1146.9" cy="134.6" r="3.5" fill="#3366dd"/>
+<circle cx="1178.0" cy="135.9" r="3.5" fill="#3366dd"/>
+<text x="88.0" y="520.0" font-size="11.5" font-weight="400" fill="#555555" text-anchor="start">3 trials × 10 s per point · median line, min–max band · 2,940 requests · 0 errors</text>
+<text x="88.0" y="538.0" font-size="11.5" font-weight="400" fill="#555555" text-anchor="start">Apple M3 Pro · Docker Desktop (Linux 6.12, cgroup v2) · requests start on a fixed schedule (open loop); 4 s refill pause between trials.</text>
+</svg>
