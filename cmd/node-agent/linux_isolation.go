@@ -8,8 +8,8 @@
 //
 // cgroup.freeze is a core cgroup v2 file present in every non-root cgroup,
 // so it works without enabling any controller in cgroup.subtree_control.
-// We deliberately skip memory.max (see PROJECT.md §2): enabling the memory
-// controller inside a container runs into the "no internal processes" rule.
+// We deliberately skip memory.max: enabling the memory controller inside a
+// container runs into the cgroup v2 "no internal processes" rule.
 //
 // Non-Linux builds use isolation_other.go instead.
 package main
