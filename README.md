@@ -33,6 +33,20 @@ flowchart TB
 
 Thin arrows are the **control plane** (gRPC). Thick arrows are the **data plane**: the gateway streams each task straight to its sandbox over a raw TCP socket, so payloads never pass through the controller.
 
+### How a request flows
+
+**Before any request arrives**, the controller fills its pool. For each new sandbox, it picks the next node in turn (round robin) and asks that node's agent to create one. The agent starts the process in new PID and UTS namespaces with its own cgroup, waits out its ~450ms startup, and freezes it. The frozen sandbox then waits in the pool.
+
+When a request comes in:
+
+1. **Client → gateway.** The client sends `POST /execute` with a one-line payload.
+2. **Gateway → controller: claim.** The controller takes a sandbox from the pool without waiting and asks its node to thaw it. That's a **warm hit**, about 2ms. If the pool is empty, it creates a sandbox on the next node instead. That's a **cold miss**, about 480ms: slower, but the request is still served.
+3. **Gateway → sandbox: run.** The gateway sends the payload straight to the sandbox over TCP and reads back one line of output.
+4. **Gateway → controller: release.** The controller tells the node to kill the sandbox and remove its cgroup. Each sandbox runs exactly one task, so nothing carries over between tasks.
+5. **Gateway → client.** The gateway responds with JSON: the sandbox, its node, warm or cold, the allocation latency and the output.
+
+Every claim also starts a replacement on the next node in the background, so the pool refills while requests are served. If a client never releases its sandbox, the controller destroys it once its 10s lease expires.
+
 | Component | Role |
 |---|---|
 | [`cmd/gateway`](cmd/gateway) | HTTP entry point. Claims a sandbox, streams the task over TCP (`TCP_NODELAY`, keepalive), releases it, returns JSON metrics. |
