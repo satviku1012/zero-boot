@@ -109,7 +109,7 @@ There are no Go unit tests yet. During development, the controller was also run 
 
 ## Limitations
 
-- **This is a simulation.** The sandbox fakes its startup with a 450ms sleep. Everything else is real: the processes, namespaces, cgroups, gRPC calls and TCP streams.
+- **This is a simulation.** The sandbox fakes its startup with a 450ms sleep and "runs" a task by uppercasing it; no real code executes. The processes, namespaces, cgroups, gRPC calls and TCP streams are real.
 - **The isolation is not a security boundary.** PID and UTS namespaces and a freezer cgroup aren't enough; there is no seccomp, user namespace or filesystem isolation. Worker containers also run privileged.
 - **The controller is a single point of failure.** It has one process and in-memory state, with no replication or recovery after a restart.
 - **Placement is plain round robin.** It doesn't account for node load or health.
